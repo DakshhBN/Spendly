@@ -99,21 +99,20 @@
 
 .hero-btn-outline {
     display: inline-block;
-    background: transparent;
-    color: var(--ink);
+    background: var(--ink);
+    color: var(--paper);
     padding: 0.8rem 2rem;
     border-radius: 999px;
     font-family: var(--font-body);
     font-size: 0.95rem;
     font-weight: 500;
-    border: 1.5px solid var(--ink);
+    border: none;
     text-decoration: none;
-    transition: all 0.2s;
+    transition: background 0.2s;
 }
 
 .hero-btn-outline:hover {
-    background: var(--ink);
-    color: var(--paper);
+    background: var(--accent);
 }
 
 /* ------------------------------------------------------------------ */
@@ -228,6 +227,78 @@
 .cat-orange { background: #f59e0b; }
 .cat-blue   { background: #3b82f6; }
 .cat-purple { background: #7c3aed; }
+
+/* ------------------------------------------------------------------ */
+/* "See how it works" button reset (button styled like a link)         */
+/* ------------------------------------------------------------------ */
+
+button.hero-btn-outline {
+    cursor: pointer;
+}
+
+/* ------------------------------------------------------------------ */
+/* Video modal                                                         */
+/* ------------------------------------------------------------------ */
+
+.video-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s, visibility 0.25s;
+}
+
+.video-modal-overlay.is-open {
+    opacity: 1;
+    visibility: visible;
+}
+
+.video-modal {
+    position: relative;
+    width: 90%;
+    max-width: 800px;
+    background: #000;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.video-modal-close {
+    position: absolute;
+    top: -2.25rem;
+    right: 0;
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 1.75rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0.25rem;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+}
+
+.video-modal-close:hover {
+    opacity: 1;
+}
+
+.video-modal-body {
+    position: relative;
+    width: 100%;
+    padding-top: 56.25%; /* 16:9 */
+}
+
+.video-modal-body iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
 
 /* ------------------------------------------------------------------ */
 /* Responsive                                                          */
