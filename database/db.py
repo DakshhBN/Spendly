@@ -37,6 +37,19 @@ def init_db():
     conn.close()
 
 
+def create_user(name, email, password):
+    conn = get_db()
+    try:
+        cur = conn.execute(
+            "INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)",
+            (name, email, generate_password_hash(password)),
+        )
+        conn.commit()
+        return cur.lastrowid
+    finally:
+        conn.close()
+
+
 def seed_db():
     conn = get_db()
     cur = conn.cursor()
