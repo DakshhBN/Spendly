@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Profile — Spendly{% endblock %}
+
+{% block content %}
+<div class="profile-section">
+
+    <div class="profile-header profile-card">
+        <div class="profile-avatar">{{ user.initials }}</div>
+        <div>
+            <div class="profile-name">{{ user.name }}</div>
+            <div class="profile-email">{{ user.email }}</div>
+            <div class="profile-meta">Member since {{ user.member_since }}</div>
+        </div>
+    </div>
+
+    <div class="profile-stats">
+        <div class="profile-stat-card">
+            <div class="stat-value">{{ stats.total_spent }}</div>
+            <div class="stat-label">Total Spent</div>
+        </div>
+        <div class="profile-stat-card">
+            <div class="stat-value">{{ stats.transaction_count }}</div>
+            <div class="stat-label">Transactions</div>
+        </div>
+        <div class="profile-stat-card">
+            <div class="stat-value">{{ stats.top_category }}</div>
+            <div class="stat-label">Top Category</div>
+        </div>
+    </div>
+
+    <div class="profile-grid">
+
+        <div class="profile-card">
+            <h2 class="profile-card-title"><i data-lucide="clock"></i> Recent Transactions</h2>
+            <table class="expense-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Description</th>
+                        <th>Category</th>
+                        <th class="amount-cell">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for e in expenses %}
+                    <tr>
+                        <td>{{ e.date }}</td>
+                        <td>{{ e.description }}</td>
+                        <td><span class="badge badge-{{ e.category | lower }}">{{ e.category }}</span></td>
+                        <td class="amount-cell">{{ e.amount }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="profile-card">
+            <h2 class="profile-card-title"><i data-lucide="pie-chart"></i> By Category</h2>
+            {% for c in categories %}
+            <div class="cat-row">
+                <span class="cat-name">{{ c.name }}</span>
+                <div class="cat-bar-track">
+                    <div class="cat-bar cat-bar-{{ c.name | lower }}" style="width: {{ c.percent }}%"></div>
+                </div>
+                <span class="cat-amount">{{ c.amount }}</span>
+            </div>
+            {% endfor %}
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>lucide.createIcons();</script>
+{% endblock %}
