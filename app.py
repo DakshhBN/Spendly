@@ -2,6 +2,10 @@ import sqlite3
 from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from database.db import get_db, init_db, seed_db, create_user, get_user_by_email
+from database.queries import (
+    get_user_by_id, get_summary_stats,
+    get_recent_transactions, get_category_breakdown,
+)
 from werkzeug.security import check_password_hash
 
 app = Flask(__name__)
@@ -104,34 +108,21 @@ def profile():
     if not session.get("user_id"):
         return redirect(url_for("login"))
 
-    user = {
-        "name": "Demo User",
-        "email": "demo@spendly.com",
-        "initials": "DU",
-        "member_since": "1 Jul 2026",
-    }
-    stats = {
-        "total_spent": "₹5,554",
-        "transaction_count": 8,
-        "top_category": "Food",
-    }
-    expenses = [
-        {"date": "20 Jul 2026", "description": "Miscellaneous",       "category": "Other",         "amount": "₹250"},
-        {"date": "15 Jul 2026", "description": "Restaurant dinner",   "category": "Food",          "amount": "₹650"},
-        {"date": "10 Jul 2026", "description": "Clothes",             "category": "Shopping",      "amount": "₹2,150"},
-        {"date": "8 Jul 2026",  "description": "OTT subscription",    "category": "Entertainment", "amount": "₹399"},
-        {"date": "5 Jul 2026",  "description": "Pharmacy — vitamins", "category": "Health",        "amount": "₹500"},
-    ]
-    categories = [
-        {"name": "Shopping",      "amount": "₹2,150", "percent": 100},
-        {"name": "Food",          "amount": "₹970",   "percent": 45},
-        {"name": "Bills",         "amount": "₹1,200", "percent": 56},
-        {"name": "Health",        "amount": "₹500",   "percent": 23},
-        {"name": "Entertainment", "amount": "₹399",   "percent": 19},
-        {"name": "Other",         "amount": "₹250",   "percent": 12},
-        {"name": "Transport",     "amount": "₹85",    "percent": 4},
-    ]
-    return render_template("profile.html", user=user, stats=stats, expenses=expenses, categories=categories)
+    uid  = session["user_id"]
+    user = get_user_by_id(uid)
+    if user is None:
+        session.clear()
+        flash("Session expired. Please log in again.")
+        return redirect(url_for("login"))
+
+    stats      = get_summary_stats(uid)
+    expenses   = get_recent_transactions(uid)
+    categories = get_category_breakdown(uid)
+
+    return render_template(
+        "profile.html",
+        user=user, stats=stats, expenses=expenses, categories=categories,
+    )
 
 
 @app.route("/expenses/add")
