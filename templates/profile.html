@@ -13,6 +13,29 @@
         </div>
     </div>
 
+    <div class="profile-card filter-card">
+        <div class="filter-bar">
+            <div class="filter-presets">
+                <button class="filter-preset-btn" id="preset-all">All Time</button>
+                <button class="filter-preset-btn" id="preset-month">This Month</button>
+                <button class="filter-preset-btn" id="preset-3months">Last 3 Months</button>
+            </div>
+            <div class="filter-divider"></div>
+            <form method="get" action="{{ url_for('profile') }}" class="filter-custom">
+                <label for="from">From</label>
+                <input type="date" id="from" name="from" class="form-input filter-date-input"
+                       value="{{ from_date or '' }}">
+                <label for="to">To</label>
+                <input type="date" id="to" name="to" class="form-input filter-date-input"
+                       value="{{ to_date or '' }}">
+                <button type="submit" class="filter-apply-btn">Apply</button>
+                {% if from_date or to_date %}
+                <a href="{{ url_for('profile') }}" class="filter-clear-btn">Clear</a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
     <div class="profile-stats">
         <div class="profile-stat-card">
             <div class="stat-value">{{ stats.total_spent }}</div>
@@ -74,4 +97,40 @@
 
 {% block scripts %}
 <script>lucide.createIcons();</script>
+<script>
+(function () {
+    var params = new URLSearchParams(window.location.search);
+    var currentFrom = params.get('from') || '';
+    var currentTo   = params.get('to')   || '';
+
+    var today = new Date();
+    function pad(n) { return String(n).padStart(2, '0'); }
+    function iso(d)  { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+
+    var todayStr       = iso(today);
+    var monthStart     = iso(new Date(today.getFullYear(), today.getMonth(), 1));
+    var d3m            = new Date(today.getFullYear(), today.getMonth() - 3, 1);
+    var threeMonthsStr = iso(d3m);
+
+    function navigate(from, to) {
+        var base = window.location.pathname;
+        var q = [];
+        if (from) q.push('from=' + from);
+        if (to)   q.push('to='   + to);
+        window.location.href = base + (q.length ? '?' + q.join('&') : '');
+    }
+
+    document.getElementById('preset-all').addEventListener('click', function () { navigate(null, null); });
+    document.getElementById('preset-month').addEventListener('click', function () { navigate(monthStart, todayStr); });
+    document.getElementById('preset-3months').addEventListener('click', function () { navigate(threeMonthsStr, todayStr); });
+
+    if (!currentFrom && !currentTo) {
+        document.getElementById('preset-all').classList.add('active');
+    } else if (currentFrom === monthStart && currentTo === todayStr) {
+        document.getElementById('preset-month').classList.add('active');
+    } else if (currentFrom === threeMonthsStr && currentTo === todayStr) {
+        document.getElementById('preset-3months').classList.add('active');
+    }
+}());
+</script>
 {% endblock %}
