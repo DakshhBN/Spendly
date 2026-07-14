@@ -17,6 +17,18 @@ with app.app_context():
 
 
 # ------------------------------------------------------------------ #
+# Helpers                                                             #
+# ------------------------------------------------------------------ #
+
+def _valid_date(s):
+    try:
+        datetime.strptime(s, "%Y-%m-%d")
+        return s
+    except (ValueError, TypeError):
+        return None
+
+
+# ------------------------------------------------------------------ #
 # Routes                                                              #
 # ------------------------------------------------------------------ #
 
@@ -115,13 +127,17 @@ def profile():
         flash("Session expired. Please log in again.")
         return redirect(url_for("login"))
 
-    stats      = get_summary_stats(uid)
-    expenses   = get_recent_transactions(uid)
-    categories = get_category_breakdown(uid)
+    from_date = _valid_date(request.args.get("from"))
+    to_date   = _valid_date(request.args.get("to"))
+
+    stats      = get_summary_stats(uid, from_date=from_date, to_date=to_date)
+    expenses   = get_recent_transactions(uid, from_date=from_date, to_date=to_date)
+    categories = get_category_breakdown(uid, from_date=from_date, to_date=to_date)
 
     return render_template(
         "profile.html",
         user=user, stats=stats, expenses=expenses, categories=categories,
+        from_date=from_date, to_date=to_date,
     )
 
 
