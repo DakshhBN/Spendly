@@ -1,7 +1,7 @@
 import sqlite3
 from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, session, flash
-from database.db import get_db, init_db, seed_db, create_user, get_user_by_email
+from database.db import get_db, init_db, seed_db, create_user, get_user_by_email, add_expense as db_add_expense
 from database.queries import (
     get_user_by_id, get_summary_stats,
     get_recent_transactions, get_category_breakdown,
@@ -14,6 +14,9 @@ app.secret_key = "dev-secret-change-in-prod"
 with app.app_context():
     init_db()
     seed_db()
+
+
+CATEGORIES = ["Food", "Transport", "Bills", "Health", "Entertainment", "Shopping", "Other"]
 
 
 # ------------------------------------------------------------------ #
@@ -87,6 +90,7 @@ def login():
 
     user = get_user_by_email(email)
     if user and check_password_hash(user["password_hash"], password):
+        session.clear()
         session["user_id"]   = user["id"]
         session["user_name"] = user["name"]
         return redirect(url_for("profile"))
@@ -141,9 +145,49 @@ def profile():
     )
 
 
-@app.route("/expenses/add")
+@app.route("/expenses/add", methods=["GET", "POST"])
 def add_expense():
-    return "Add expense — coming in Step 7"
+    if not session.get("user_id"):
+        return redirect(url_for("login"))
+
+    today = datetime.today().strftime("%Y-%m-%d")
+
+    if request.method == "GET":
+        return render_template("add_expense.html", today=today, categories=CATEGORIES)
+
+    amount_str  = request.form.get("amount", "").strip()
+    category    = request.form.get("category", "").strip()
+    date        = request.form.get("date", "").strip()
+    description = request.form.get("description", "").strip()
+
+    valid = True
+
+    try:
+        amount = float(amount_str)
+        if amount <= 0 or amount > 10_000_000:
+            raise ValueError
+    except ValueError:
+        flash("Amount must be a positive number (max ₹1,00,00,000).")
+        valid = False
+
+    if category not in CATEGORIES:
+        flash("Please select a valid category.")
+        valid = False
+
+    if not _valid_date(date):
+        flash("Please enter a valid date.")
+        valid = False
+
+    if description and len(description) > 200:
+        flash("Description must be 200 characters or fewer.")
+        valid = False
+
+    if not valid:
+        return render_template("add_expense.html", today=today, categories=CATEGORIES)
+
+    db_add_expense(session["user_id"], amount, category, date, description)
+    flash("Expense added successfully.")
+    return redirect(url_for("profile"))
 
 
 @app.route("/expenses/<int:id>/edit")
