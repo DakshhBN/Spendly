@@ -60,6 +60,20 @@ def get_user_by_email(email):
         conn.close()
 
 
+def add_expense(user_id, amount, category, date, description):
+    conn = get_db()
+    try:
+        cur = conn.execute(
+            "INSERT INTO expenses (user_id, amount, category, date, description)"
+            " VALUES (?, ?, ?, ?, ?)",
+            (user_id, amount, category, date, description or None),
+        )
+        conn.commit()
+        return cur.lastrowid
+    finally:
+        conn.close()
+
+
 def seed_db():
     conn = get_db()
     cur = conn.cursor()

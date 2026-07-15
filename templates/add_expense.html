@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Add Expense — Spendly{% endblock %}
+
+{% block content %}
+<div class="add-expense-section">
+
+    <div class="add-expense-header">
+        <a href="{{ url_for('profile') }}" class="add-expense-back">
+            <i data-lucide="arrow-left"></i> Back to profile
+        </a>
+        <h1 class="add-expense-title">Add Expense</h1>
+        <p class="add-expense-subtitle">Record a new transaction</p>
+    </div>
+
+    <div class="add-expense-card">
+        {% with messages = get_flashed_messages() %}
+            {% for msg in messages %}
+                <div class="auth-error">{{ msg }}</div>
+            {% endfor %}
+        {% endwith %}
+
+        <form method="post" action="{{ url_for('add_expense') }}">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="amount">Amount (₹)</label>
+                    <input type="number" id="amount" name="amount"
+                           class="form-input" placeholder="0.00"
+                           step="0.01" min="0.01"
+                           value="{{ request.form.get('amount', '') }}"
+                           required autofocus>
+                </div>
+                <div class="form-group">
+                    <label for="date">Date</label>
+                    <input type="date" id="date" name="date"
+                           class="form-input"
+                           value="{{ request.form.get('date', today) }}"
+                           required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="category">Category</label>
+                <select id="category" name="category" class="form-input" required>
+                    <option value="" disabled {% if not request.form.get('category') %}selected{% endif %}>Select a category</option>
+                    {% for cat in categories %}
+                        <option value="{{ cat }}" {% if request.form.get('category') == cat %}selected{% endif %}>{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="description">Description <span style="color: var(--ink-faint); font-weight: 400;">(optional)</span></label>
+                <textarea id="description" name="description"
+                          class="form-input" placeholder="What was this for?"
+                          maxlength="200">{{ request.form.get('description', '') }}</textarea>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn-submit">Add Expense</button>
+                <a href="{{ url_for('profile') }}" class="btn-ghost">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>lucide.createIcons();</script>
+{% endblock %}
