@@ -258,4 +258,5 @@ def delete_expense(expense_id):
 
 
 if __name__ == "__main__":
-    app.run(debug=os.environ.get("FLASK_DEBUG") == "1", port=5001)
+    port = int(os.environ.get("PORT", 5001))
+    app.run(debug=os.environ.get("FLASK_DEBUG") == "1", host="0.0.0.0", port=port)
