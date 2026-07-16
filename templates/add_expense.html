@@ -21,6 +21,7 @@
         {% endwith %}
 
         <form method="post" action="{{ url_for('add_expense') }}">
+            <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
             <div class="form-row">
                 <div class="form-group">
                     <label for="amount">Amount (₹)</label>

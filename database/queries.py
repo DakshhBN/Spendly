@@ -98,6 +98,19 @@ def get_recent_transactions(user_id, limit=10, from_date=None, to_date=None):
     ]
 
 
+def delete_expense(expense_id, user_id):
+    conn = get_db()
+    try:
+        cursor = conn.execute(
+            "DELETE FROM expenses WHERE id = ? AND user_id = ?",
+            (expense_id, user_id),
+        )
+        conn.commit()
+        return cursor.rowcount
+    finally:
+        conn.close()
+
+
 def get_category_breakdown(user_id, from_date=None, to_date=None):
     conn = get_db()
     try:
