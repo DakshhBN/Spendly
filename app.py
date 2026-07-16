@@ -1,7 +1,12 @@
+import os
 import sqlite3
 from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, session, flash
-from database.db import get_db, init_db, seed_db, create_user, get_user_by_email, add_expense as db_add_expense
+from database.db import (
+    get_db, init_db, seed_db, create_user, get_user_by_email,
+    add_expense as db_add_expense,
+    get_expense_by_id, update_expense,
+)
 from database.queries import (
     get_user_by_id, get_summary_stats,
     get_recent_transactions, get_category_breakdown,
@@ -9,7 +14,7 @@ from database.queries import (
 from werkzeug.security import check_password_hash
 
 app = Flask(__name__)
-app.secret_key = "dev-secret-change-in-prod"
+app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-change-in-prod")
 
 with app.app_context():
     init_db()
@@ -29,6 +34,24 @@ def _valid_date(s):
         return s
     except (ValueError, TypeError):
         return None
+
+
+def _validate_expense_form(amount_str, category, date, description):
+    errors = []
+    amount = None
+    try:
+        amount = float(amount_str)
+        if amount <= 0 or amount > 10_000_000:
+            raise ValueError
+    except ValueError:
+        errors.append("Amount must be a positive number (max ₹1,00,00,000).")
+    if category not in CATEGORIES:
+        errors.append("Please select a valid category.")
+    if not _valid_date(date):
+        errors.append("Please enter a valid date.")
+    if description and len(description) > 200:
+        errors.append("Description must be 200 characters or fewer.")
+    return amount, errors
 
 
 # ------------------------------------------------------------------ #
@@ -160,29 +183,10 @@ def add_expense():
     date        = request.form.get("date", "").strip()
     description = request.form.get("description", "").strip()
 
-    valid = True
-
-    try:
-        amount = float(amount_str)
-        if amount <= 0 or amount > 10_000_000:
-            raise ValueError
-    except ValueError:
-        flash("Amount must be a positive number (max ₹1,00,00,000).")
-        valid = False
-
-    if category not in CATEGORIES:
-        flash("Please select a valid category.")
-        valid = False
-
-    if not _valid_date(date):
-        flash("Please enter a valid date.")
-        valid = False
-
-    if description and len(description) > 200:
-        flash("Description must be 200 characters or fewer.")
-        valid = False
-
-    if not valid:
+    amount, errors = _validate_expense_form(amount_str, category, date, description)
+    for msg in errors:
+        flash(msg)
+    if errors:
         return render_template("add_expense.html", today=today, categories=CATEGORIES)
 
     db_add_expense(session["user_id"], amount, category, date, description)
@@ -190,9 +194,34 @@ def add_expense():
     return redirect(url_for("profile"))
 
 
-@app.route("/expenses/<int:id>/edit")
-def edit_expense(id):
-    return "Edit expense — coming in Step 8"
+@app.route("/expenses/<int:expense_id>/edit", methods=["GET", "POST"])
+def edit_expense(expense_id):
+    if not session.get("user_id"):
+        return redirect(url_for("login"))
+
+    uid     = session["user_id"]
+    expense = get_expense_by_id(expense_id, uid)
+    if expense is None:
+        flash("Expense not found.")
+        return redirect(url_for("profile"))
+
+    if request.method == "GET":
+        return render_template("edit_expense.html", expense=expense, categories=CATEGORIES)
+
+    amount_str  = request.form.get("amount", "").strip()
+    category    = request.form.get("category", "").strip()
+    date        = request.form.get("date", "").strip()
+    description = request.form.get("description", "").strip()
+
+    amount, errors = _validate_expense_form(amount_str, category, date, description)
+    for msg in errors:
+        flash(msg)
+    if errors:
+        return render_template("edit_expense.html", expense=expense, categories=CATEGORIES)
+
+    update_expense(expense_id, uid, amount, category, date, description)
+    flash("Expense updated successfully.")
+    return redirect(url_for("profile"))
 
 
 @app.route("/expenses/<int:id>/delete")
@@ -201,4 +230,4 @@ def delete_expense(id):
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5001)
+    app.run(debug=os.environ.get("FLASK_DEBUG") == "1", port=5001)
