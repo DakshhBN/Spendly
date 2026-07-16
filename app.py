@@ -1,7 +1,8 @@
 import os
+import secrets
 import sqlite3
 from datetime import datetime
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, abort
 from database.db import (
     get_db, init_db, seed_db, create_user, get_user_by_email,
     add_expense as db_add_expense,
@@ -10,6 +11,7 @@ from database.db import (
 from database.queries import (
     get_user_by_id, get_summary_stats,
     get_recent_transactions, get_category_breakdown,
+    delete_expense as db_delete_expense,
 )
 from werkzeug.security import check_password_hash
 
@@ -22,6 +24,12 @@ with app.app_context():
 
 
 CATEGORIES = ["Food", "Transport", "Bills", "Health", "Entertainment", "Shopping", "Other"]
+
+
+@app.before_request
+def _ensure_csrf_token():
+    if "csrf_token" not in session:
+        session["csrf_token"] = secrets.token_hex(32)
 
 
 # ------------------------------------------------------------------ #
@@ -52,6 +60,13 @@ def _validate_expense_form(amount_str, category, date, description):
     if description and len(description) > 200:
         errors.append("Description must be 200 characters or fewer.")
     return amount, errors
+
+
+def _check_csrf():
+    if app.testing:
+        return
+    if request.form.get("csrf_token") != session.get("csrf_token"):
+        abort(403)
 
 
 # ------------------------------------------------------------------ #
@@ -178,6 +193,7 @@ def add_expense():
     if request.method == "GET":
         return render_template("add_expense.html", today=today, categories=CATEGORIES)
 
+    _check_csrf()
     amount_str  = request.form.get("amount", "").strip()
     category    = request.form.get("category", "").strip()
     date        = request.form.get("date", "").strip()
@@ -208,6 +224,7 @@ def edit_expense(expense_id):
     if request.method == "GET":
         return render_template("edit_expense.html", expense=expense, categories=CATEGORIES)
 
+    _check_csrf()
     amount_str  = request.form.get("amount", "").strip()
     category    = request.form.get("category", "").strip()
     date        = request.form.get("date", "").strip()
@@ -224,9 +241,20 @@ def edit_expense(expense_id):
     return redirect(url_for("profile"))
 
 
-@app.route("/expenses/<int:id>/delete")
-def delete_expense(id):
-    return "Delete expense — coming in Step 9"
+@app.route("/expenses/<int:expense_id>/delete", methods=["POST"])
+def delete_expense(expense_id):
+    if not session.get("user_id"):
+        return redirect(url_for("login"))
+
+    _check_csrf()
+    uid = session["user_id"]
+    expense = get_expense_by_id(expense_id, uid)
+    if expense is None:
+        abort(404)
+
+    db_delete_expense(expense_id, uid)
+    flash("Expense deleted.")
+    return redirect(url_for("profile"))
 
 
 if __name__ == "__main__":
