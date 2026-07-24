@@ -72,7 +72,7 @@ tests/               — pytest test suite
 
 ## Deployment
 
-Includes a `Procfile` for deployment on platforms like Railway or Heroku, running via Gunicorn:
+Deployed on [Render](https://render.com), running via Gunicorn per the `Procfile`:
 
 ```
 web: gunicorn app:app --bind 0.0.0.0:$PORT
