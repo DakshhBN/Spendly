@@ -77,7 +77,3 @@ Includes a `Procfile` for deployment on platforms like Railway or Heroku, runnin
 ```
 web: gunicorn app:app --bind 0.0.0.0:$PORT
 ```
-
-## Repository
-
-[https://github.com/DakshhBN/Spendly](https://github.com/DakshhBN/Spendly)
